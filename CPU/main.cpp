@@ -36,10 +36,9 @@ int main(int argc, char **argv)
 
     COUNT_SKETCH *cntsketch = new COUNT_SKETCH(ROWS_SKETCH ,WIDTH_SKETCH);
     CM_SKETCH *cmsketch = new CM_SKETCH(ROWS_SKETCH, WIDTH_SKETCH);
-    FC1_SKETCH *fc1sketch = new FC1_SKETCH(ROWS_SKETCH, WIDTH_SKETCH);
+    CU_SKETCH *cusketch = new CU_SKETCH(ROWS_SKETCH, WIDTH_SKETCH);
     CML_SKETCH *cmlsketch = new CML_SKETCH(ROWS_SKETCH, WIDTH_SKETCH * 4, 1.08, 255);
     FID_SKETCH *fidsketch = new FID_SKETCH(ROWS_SKETCH, WIDTH_SKETCH, factor);
-    H1_SKETCH *h1sketch = new H1_SKETCH(ROWS_SKETCH, WIDTH_SKETCH);
     BENCHMARK *benchmark = new BENCHMARK();
     vector<string> query_str;
 
@@ -69,19 +68,17 @@ int main(int argc, char **argv)
         fscanf(file_insert, " : %d", &val);
         cntsketch->insert(str, val);
         cmsketch->insert(str, val);
-        fc1sketch->insert(str, val);
+        cusketch->insert(str, val);
         cmlsketch->insert(str, val);
         fidsketch->insert(str, val);
-        h1sketch->insert(str, val);
         benchmark->insert(str, val);
         if ((i + 1) % (N_INSERT / 20))
             continue;
         double sum_cntsketch = 0;
         double sum_cmsketch = 0;
-        double sum_fc1sketch = 0;
+        double sum_cusketch = 0;
         double sum_cmlsketch = 0;
         double sum_fidsketch = 0;
-        double sum_h1sketch = 0;
         double sum_benchmark = 0;
         int zero = 0;
         for (int j = 0; j < N_QUERY; ++j) {
@@ -93,19 +90,17 @@ int main(int argc, char **argv)
             }
             sum_cntsketch += fabs(cntsketch->query(str) - freq) / freq;
             sum_cmsketch += fabs(cmsketch->query(str) - freq) / freq;
-            sum_fc1sketch += fabs(fc1sketch->query(str) - freq) / freq;
+            sum_cusketch += fabs(cusketch->query(str) - freq) / freq;
             sum_cmlsketch += fabs(cmlsketch->query(str) - freq) / freq;
             sum_fidsketch += fabs(fidsketch->query(str) - freq) / freq;
-            sum_h1sketch += fabs(h1sketch->query(str) - freq) / freq;
             sum_benchmark += freq;
         }
-        printf("%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+        printf("%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
         sum_cntsketch / (N_QUERY - zero),
         sum_cmsketch / (N_QUERY - zero),
-        sum_fc1sketch / (N_QUERY - zero),
+        sum_cusketch / (N_QUERY - zero),
         sum_cmlsketch / (N_QUERY - zero),
         sum_fidsketch / (N_QUERY - zero),
-        sum_h1sketch / (N_QUERY - zero),
         sum_benchmark);
     }
 

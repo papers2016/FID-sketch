@@ -170,12 +170,12 @@ public:
     virtual ~CM_SKETCH() {}
 };
 
-class FC1_SKETCH : public CM_SKETCH
+class CU_SKETCH : public CM_SKETCH
 {
 protected:
     int **cp_counter;
 public:
-    FC1_SKETCH(int _d, int _w) : CM_SKETCH(_d, _w) {
+    CU_SKETCH(int _d, int _w) : CM_SKETCH(_d, _w) {
         cp_counter = new int* [_d];
         for (int i = 0; i < _d; ++i)
             cp_counter[i] = new int [_w];
@@ -211,74 +211,19 @@ public:
                 *cp -= val;
         }
     }
-    virtual ~FC1_SKETCH() {
+    virtual ~CU_SKETCH() {
         for (int i = 0; i < d; ++i)
             delete [] counter[i];
         delete [] counter;
     }
 };
 
-class FC2_SKETCH : public FC1_SKETCH
-{
+class FID_SKETCH : public CU_SKETCH {
 protected:
-    int insert_count;
-    int pass_count;
-    queue<pair<string, int>> waiting_list;
-public:
-    FC2_SKETCH(int _d, int _w)
-        : FC1_SKETCH(_d, _w)
-    {
-        insert_count = 0;
-        pass_count = 0;
-    }
-    virtual void insert(const char *str, int val)
-    {
-        ++insert_count;
-        if (insert_count * 10 < N_INSERT)
-        {
-            FC1_SKETCH::insert(str, val);
-            return;
-        }
-        ++pass_count;
-        int old = query(str);
-        unsigned h1 = hash1(str);
-        unsigned h2 = hash2(str);
-        int inc = 0;
-        for (int i = 0; i < d; ++i) {
-            int *p = &counter[i][(h1 + i * h2) % w];
-            if (*p < old + val)
-                ++inc;
-        }
-        if (inc * 4 > d) {
-            waiting_list.push(pair<string, int>(str, val));
-            return;
-        }
-        FC1_SKETCH::insert(str, val);
-    }
-    void insert_all()
-    {
-        size_t threshhold = waiting_list.size() * 2;
-        while (!waiting_list.empty() && --threshhold)
-        {
-            auto p = waiting_list.front();
-            insert(p.first.c_str(), p.second);
-            waiting_list.pop();
-        }
-        while (!waiting_list.empty())
-        {
-            auto p = waiting_list.front();
-            FC1_SKETCH::insert(p.first.c_str(), p.second);
-            waiting_list.pop();
-        }
-    }
-};
-
-class FID_SKETCH : public FC1_SKETCH {
-protected:
-    FC1_SKETCH fat_sketch;		// or we can use #CM_SKETCH fat_sketch;# to assist insertion
+    CU_SKETCH fat_sketch;		// or we can use #CM_SKETCH fat_sketch;# to assist insertion
 public:
     FID_SKETCH(int _d, int _w, int _k = 10)
-    : FC1_SKETCH(_d, _w), fat_sketch(_d, _w * _k) {}
+    : CU_SKETCH(_d, _w), fat_sketch(_d, _w * _k) {}
     virtual void insert(const char *str, int val) {
         unsigned h1 = hash1(str);
         unsigned h2 = hash2(str);
@@ -293,33 +238,8 @@ public:
         fat_sketch.insert(str, val);
     }
     virtual void remove(const char *str, int val) {
-        FC1_SKETCH::remove(str, val);
+        CU_SKETCH::remove(str, val);
         fat_sketch.remove(str, val);
-    }
-};
-
-class H1_SKETCH : public FC1_SKETCH {
-protected:
-    BENCHMARK hashTable;
-public:
-    H1_SKETCH(int _d, int _w)
-    : FC1_SKETCH(_d, _w), hashTable() {}
-    virtual void insert(const char *str, int val) {
-        unsigned h1 = hash1(str);
-        unsigned h2 = hash2(str);
-        int old = hashTable.query((char *)str);
-        for (int i = 0; i < d; ++i) {
-            int *p = &counter[i][(h1 + i * h2) % w],
-                *cp = &cp_counter[i][(h1 + i * h2) % w];
-            int target = *p < old + val ? old + val : *p;
-            *cp += *p + val - target;
-            *p = target;
-        }
-        hashTable.insert((char *)str, val);
-    }
-    virtual void remove(const char *str, int val) {
-        FC1_SKETCH::remove(str, val);
-        hashTable.remove((char *)str, val);
     }
 };
 
